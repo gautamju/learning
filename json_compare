@@ -1,0 +1,63 @@
+import json
+from collections import OrderedDict
+
+def load_json(file_path):
+    with open(file_path, "r") as f:
+        return json.load(f, object_pairs_hook=OrderedDict)
+
+def index_by_id(details_list):
+    return {item["id"]: item for item in details_list}
+
+def compare_flat_items(old_item, new_item):
+    """Compare only top-level fields between two items."""
+    changes = {}
+    all_keys = set(old_item.keys()).union(set(new_item.keys()))
+    for key in all_keys:
+        old_val = old_item.get(key)
+        new_val = new_item.get(key)
+        if old_val != new_val:
+            changes[key] = {"old": old_val, "new": new_val}
+    return changes
+
+def compare_json_states(old_data, new_data):
+    old_index = index_by_id(old_data["details"])
+    new_index = index_by_id(new_data["details"])
+
+    result = {
+        "deleted": [],
+        "added": [],
+        "modified": []
+    }
+
+    old_ids = set(old_index.keys())
+    new_ids = set(new_index.keys())
+
+    # Deleted items
+    for deleted_id in old_ids - new_ids:
+        result["deleted"].append(old_index[deleted_id])
+
+    # New items
+    for added_id in new_ids - old_ids:
+        result["added"].append(new_index[added_id])
+
+    # Modified items
+    for common_id in old_ids & new_ids:
+        changes = compare_flat_items(old_index[common_id], new_index[common_id])
+        if changes:
+            result["modified"].append({
+                "id": common_id,
+                "changes": changes
+            })
+
+    return result
+
+old_json = load_json("old.json")
+new_json = load_json("new.json")
+
+diff = compare_json_states(old_json, new_json)
+
+# Save to a file
+with open("diff_output.json", "w") as f:
+    json.dump(diff, f, indent=2)
+
+print("ID-level diff saved to diff_output.json ✅")
