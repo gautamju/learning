@@ -29,7 +29,7 @@ class JsonDiffChecker
             if (!string.IsNullOrEmpty(outputFolder))
             {
                 Directory.CreateDirectory(outputFolder);
-                var outPath = Path.Combine(outputFolder, $"diff_{i + 1}_{Path.GetFileName(fileB)}_vs_{Path.GetFileName(fileA)}.json");
+                var outPath = Path.Combine(outputFolder, $"diff_{i + 1}_{Path.GetFileNameWithoutExtension(fileB)}_vs_{Path.GetFileNameWithoutExtension(fileA)}.json");
                 File.WriteAllText(outPath, JsonConvert.SerializeObject(diff, Formatting.Indented));
                 Console.WriteLine($"✅ Saved diff to {outPath}");
             }
@@ -75,8 +75,8 @@ class JsonDiffChecker
 
         foreach (var commonId in oldKeys.Intersect(newKeys))
         {
-            var changes = GetFieldLevelChanges(oldItems[commonId], newItems[commonId]);
-            if (changes.Count > 0)
+            var changes = GetTopLevelChanges(oldItems[commonId], newItems[commonId]);
+            if (changes.HasValues)
             {
                 result["modified"].Add(new JObject
                 {
@@ -89,64 +89,40 @@ class JsonDiffChecker
         return result;
     }
 
-    private static JObject GetFieldLevelChanges(JToken oldToken, JToken newToken)
+    private static JObject GetTopLevelChanges(JObject oldObj, JObject newObj)
     {
-        if (oldToken.Type != newToken.Type)
+        var changes = new JObject();
+        var allKeys = oldObj.Properties().Select(p => p.Name)
+                         .Union(newObj.Properties().Select(p => p.Name))
+                         .Distinct();
+
+        foreach (var key in allKeys)
         {
-            return new JObject
+            var oldVal = oldObj.ContainsKey(key) ? oldObj[key] : null;
+            var newVal = newObj.ContainsKey(key) ? newObj[key] : null;
+
+            if (!JToken.DeepEquals(oldVal, newVal))
             {
-                ["old"] = oldToken,
-                ["new"] = newToken
-            };
-        }
-
-        if (oldToken.Type == JTokenType.Object)
-        {
-            var diff = new JObject();
-            var oldObj = (JObject)oldToken;
-            var newObj = (JObject)newToken;
-
-            var allKeys = oldObj.Properties().Select(p => p.Name)
-                                .Union(newObj.Properties().Select(p => p.Name))
-                                .Distinct();
-
-            foreach (var key in allKeys)
-            {
-                var oldVal = oldObj[key];
-                var newVal = newObj[key];
-
-                var change = GetFieldLevelChanges(oldVal, newVal);
-                if (change.HasValues)
-                    diff[key] = change;
-            }
-
-            return diff;
-        }
-
-        if (oldToken.Type == JTokenType.Array)
-        {
-            if (!JToken.DeepEquals(oldToken, newToken))
-            {
-                return new JObject
+                changes[key] = new JObject
                 {
-                    ["old"] = oldToken,
-                    ["new"] = newToken
+                    ["old"] = oldVal,
+                    ["new"] = newVal
                 };
             }
-            return new JObject();
         }
 
-        return !JToken.DeepEquals(oldToken, newToken)
-            ? new JObject { ["old"] = oldToken, ["new"] = newToken }
-            : new JObject();
+        return changes;
     }
 }
-
 
 class Program
 {
     static void Main(string[] args)
     {
-        JsonDiffChecker.CompareAllFiles("C:\\Your\\Json\\Folder", "C:\\Output\\Diffs");
+        // Replace with your actual folder path
+        string folderPath = @"C:\Path\To\JsonFiles";
+        string outputFolder = @"C:\Path\To\DiffResults";
+
+        JsonDiffChecker.CompareAllFiles(folderPath, outputFolder);
     }
 }
