@@ -1,0 +1,73 @@
+To generate high-quality Unit Tests (UT) using a prompt (whether you're using me, ChatGPT, or any other AI assistant), your prompt should clearly include the following:
+
+✅ Checklist for a Good Prompt to Generate Unit Tests
+✅ Target language & test framework
+
+✅ Class & method code to test
+
+✅ Behavior/expected output
+
+✅ External dependencies (if any)
+
+✅ Return type (or if it’s void)
+
+✅ What to mock or assert
+
+🧾 Prompt Template You Can Use
+"Generate unit tests in C# using [xUnit/NUnit/MSTest] for the following method. Mock external dependencies (like [list them]) if needed. Also handle edge cases. Here's the method:
+
+csharp
+Copy
+Edit
+// paste your method here  
+The method is [public/private/static/void]. I want to verify [state change/logging/dependency calls/exceptions/etc.]."
+
+🔧 Example Prompt for a Public Method
+Generate unit tests in C# using xUnit and Moq for the following public method. Mock external dependencies (like ILogger, IEmailService). Handle normal and edge cases.
+
+csharp
+Copy
+Edit
+public class UserService
+{
+    private readonly IEmailService _emailService;
+    private readonly ILogger _logger;
+    
+    public UserService(IEmailService emailService, ILogger logger)
+    {
+        _emailService = emailService;
+        _logger = logger;
+    }
+    
+    public void Register(string email)
+    {
+        if (string.IsNullOrEmpty(email))
+        {
+            _logger.Log("Invalid email.");
+            return;
+        }
+        
+        _emailService.SendWelcomeEmail(email);
+        _logger.Log("User registered.");
+    }
+}
+🧪 Resulting Unit Test Will Cover:
+Email is null/empty ➜ logs and skips sending email
+
+Valid email ➜ mocks SendWelcomeEmail() and Log()
+
+Asserts calls to ILogger and IEmailService
+
+🎯 Optional Add-ons for Prompt
+✅ "Include test case names following naming convention"
+
+✅ "Add comments in test cases"
+
+✅ "Include Arrange-Act-Assert format"
+
+✅ "Cover edge cases and exceptions"
+
+🧠 TL;DR - One-line Prompt You Can Copy
+"Generate C# unit tests using xUnit and Moq for the following method. Mock dependencies, cover edge cases, and use AAA (Arrange-Act-Assert) format:"
+
+Want to give it a try with one of your actual methods? Paste it here and I’ll help you write the ideal prompt and show you the generated test.
